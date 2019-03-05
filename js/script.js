@@ -148,11 +148,12 @@ function computeEmailStatistics(email) {
   // var messagesSize = messageResp.resultSizeEstimate;
 }
 
-async function listMessages() {
+function listMessages() {
 
-  const stringArray = await getEmailStatString();
+  // const stringArray =
+  getEmailStatString(printOutput);
 
-  const result = await printOutput(stringArray, "email-stats");
+  // const result = ;
 }
 
 function printOutput(stringArray, id) {
@@ -184,7 +185,7 @@ function printOutput(stringArray, id) {
 //   getPageOfMessages(initialRequest, []);
 // }
 
-async function countMessagesInSizeRange(lowerSize, upperSize) {
+async function countMessagesInSizeRange(lowerSize, upperSize, callback) {
   var stringSizeQuery = '';
   var stringSizeRange = '';
   if (lowerSize !== '') {
@@ -209,40 +210,22 @@ async function countMessagesInSizeRange(lowerSize, upperSize) {
             'q' : stringSizeQuery
           })
           .then(
-              async function(response) {
-                var messages = response.result.messages;
-                var messagesLength = 0;
-                if (response.result.resultSizeEstimate > 0) {
-                  messagesLength = messages.length;
-                }
+              function(response) {
+                console.log("Resp", response);
+                console.log("Rsut", response.result);
                 messageString =
-                    await '<span style="color: #e54b76;"><strong>' +
-                    stringSizeRange +
+                    '<span style="color: #e54b76;"><strong>' + stringSizeRange +
                     '<strong></span> <span style="color:#727190;"><em>' +
-                    messagesLength + '</em></span><br>';
-                // document.getElementById("email-stats").innerHTML +=
-                // localOutput;
+                    response.result.resultSizeEstimate + '</em></span><br>';
+                messagesLength = response.result.resultSizeEstimate;
               },
               function(err) { console.error("Execute error", err); });
 
-  return [ messagesLength, messageString ];
+  callback([ messagesLength, messageString ]);
 }
 
-async function getEmailStatString() {
-  var stringOutput = new Array(7);
-  // var request =
-  //     await gapi.client.gmail.users.messages
-  //         .list({'userId' : 'me', 'includeSpamTrash' : true})
-  //         .then(
-  //             function(response) {
-  //               var result = response.result;
-  //               var messages = result.messages;
-  //               stringOutput[0] =
-  //                   "<br>There are currently " + messages.length +
-  //                   " messages in your inbox, with the following size
-  //                   repartition: ";
-  //             },
-  //             function(err) { console.error("Execute error", err); });
+async function getEmailStatString(callback) {
+  var stringOutput = new Array(8);
 
   var totalSize = 0;
   var messagesCount = 0;
@@ -252,26 +235,21 @@ async function getEmailStatString() {
   var messageAverageSizes = [ 125, 375, 750, 1500, 3500, 10000 ];
 
   for (let i = 0; i < 6; i++) {
-    var messageOutput =
-        await countMessagesInSizeRange(lowerBounds[i], upperBounds[i]);
-
-    let getFields = new Promise(resolve => {
-      console.log("message" + i, messageOutput);
-      totalSize += messageOutput[0] * messageAverageSizes[i];
-      messagesCount += messageOutput[0];
-      stringOutput[i] = messageOutput[1];
-      resolve();
-    });
-    await getFields;
+    await countMessagesInSizeRange(
+        lowerBounds[i], upperBounds[i], (messageOutput) => {
+          console.log("message" + i, messageOutput);
+          totalSize += messageOutput[0] * messageAverageSizes[i];
+          messagesCount += messageOutput[0];
+          console.log('Count', messagesCount);
+          stringOutput[i + 1] = messageOutput[1];
+        });
   }
-  let fillIntroOutro = new Promise(resolve => {
-    stringOutput[0] =
-        "<br>There are currently " + messagesCount +
-        " messages in your inbox, with the following size repartition: ";
-    stringOutput[6] =
-        "for an estimated total size of " + totalSize + " bytes. ";
-    resolve();
-  });
-  await fillIntroOutro;
-  return new Promise(resolve => { resolve(stringOutput); });
+  stringOutput[0] =
+      "<br>There are currently " + messagesCount +
+      " messages in your inbox, with the following size repartition: ";
+  stringOutput[7] = "for an estimated total size of " + totalSize + " bytes. ";
+
+  await callback(stringOutput, "email-stats");
+
+  return stringOutput;
 }
