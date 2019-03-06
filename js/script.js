@@ -144,48 +144,43 @@ function signOut() {
 function computeEmailStatistics(email) {
   // Get list of messages
   gapi.client.load('gmail', 'v1', listMessages);
-
-  // var messagesSize = messageResp.resultSizeEstimate;
 }
 
-function listMessages() {
-
-  // const stringArray =
-  getEmailStatString(printOutput);
-
-  // const result = ;
-}
+function listMessages() { getEmailStatString(printOutput); }
 
 function printOutput(stringArray, id) {
-  return new Promise(resolve => {
-    document.getElementById(id).innerHTML = "";
-    for (i = 0; i < stringArray.length; i++) {
-      document.getElementById(id).innerHTML += stringArray[i];
-    }
-    resolve(stringArray);
-  });
+  document.getElementById(id).innerHTML = "";
+  for (i = 0; i < stringArray.length; i++) {
+    document.getElementById(id).innerHTML += stringArray[i];
+  }
 }
 
-// function listMessagesWithQuery(email, query, callback) {
-//   var getPageOfMessages = function(request, result) {
-//     request.execute(function(resp) {
-//       result = result.concat(resp.messages);
-//       var nextPageToken = resp.nextPageToken;
-//       if (nextPageToken) {
-//         request = gapi.client.gmail.users.messages.list(
-//             {'userId' : email, 'pageToken' : nextPageToken, 'q' : query});
-//         getPageOfMessages(request, result);
-//       } else {
-//         callback(result);
-//       }
-//     });
-//   };
-//   var initialRequest =
-//       gapi.client.gmail.users.messages.list({'userId' : email, 'q' : query});
-//   getPageOfMessages(initialRequest, []);
-// }
+function getMessages(userId, query, spam, callback) {
+  var getPageOfMessages = function(request, result) {
+    request.execute(function(resp) {
+      result = result.concat(resp.messages);
+      var nextPageToken = resp.nextPageToken;
+      if (nextPageToken) {
+        request = gapi.client.gmail.users.messages.list({
+          'userId' : userId,
+          'pageToken' : nextPageToken,
+          'includeSpamTrash' : true,
+          'q' : query
+        });
+        getPageOfMessages(request, result);
+      } else {
+        callback(result);
+        // return new Promise(resolve => {resolve(result)});
+      }
+    });
+  };
+  var initialRequest = gapi.client.gmail.users.messages.list(
+      {'userId' : userId, 'includeSpamTrash' : true, 'q' : query});
+  getPageOfMessages(initialRequest, []);
+  // return new Promise(resolve => {resolve(result)});
+}
 
-async function countMessagesInSizeRange(lowerSize, upperSize, callback) {
+function countMessagesInSizeRange(lowerSize, upperSize, callback) {
   var stringSizeQuery = '';
   var stringSizeRange = '';
   if (lowerSize !== '') {
@@ -202,31 +197,17 @@ async function countMessagesInSizeRange(lowerSize, upperSize, callback) {
 
   var messagesLength = 0;
   var messageString = "";
-  var request =
-      await gapi.client.gmail.users.messages
-          .list({
-            'userId' : 'me',
-            'includeSpamTrash' : true,
-            'q' : stringSizeQuery
-          })
-          .then(
-              function(response) {
-                console.log("Resp", response);
-                console.log("Rsut", response.result);
-                messageString =
-                    '<span style="color: #e54b76;"><strong>' + stringSizeRange +
-                    '<strong></span> <span style="color:#727190;"><em>' +
-                    response.result.resultSizeEstimate + '</em></span><br>';
-                messagesLength = response.result.resultSizeEstimate;
-              },
-              function(err) { console.error("Execute error", err); });
 
-  callback([ messagesLength, messageString ]);
+  getMessages('me', stringSizeQuery, true, (result) => {
+    messageString = '<span style="color: #e54b76;"><strong>' + stringSizeRange +
+                    '<strong></span> <span style="color:#727190;"><em>' +
+                    result.length + '</em></span><br>';
+    messagesLength = result.length;
+  });
+  callback(messagesLength, messageString);
 }
 
 async function getEmailStatString(callback) {
-  var stringOutput = new Array(8);
-
   var totalSize = 0;
   var messagesCount = 0;
   // Get number of messages within size brackets to estimate size
@@ -234,22 +215,25 @@ async function getEmailStatString(callback) {
   var upperBounds = [ '250K', '500K', '1M', '2M', '5M', '' ];
   var messageAverageSizes = [ 125, 375, 750, 1500, 3500, 10000 ];
 
-  for (let i = 0; i < 6; i++) {
-    await countMessagesInSizeRange(
-        lowerBounds[i], upperBounds[i], (messageOutput) => {
-          console.log("message" + i, messageOutput);
-          totalSize += messageOutput[0] * messageAverageSizes[i];
-          messagesCount += messageOutput[0];
-          console.log('Count', messagesCount);
-          stringOutput[i + 1] = messageOutput[1];
-        });
-  }
-  stringOutput[0] =
-      "<br>There are currently " + messagesCount +
-      " messages in your inbox, with the following size repartition: ";
-  stringOutput[7] = "for an estimated total size of " + totalSize + " bytes. ";
+  var stringOutput = new Array(8);
+  var getAllMessages = () => {
+    for (let i = 0; i < 6; i++) {
+      countMessagesInSizeRange(
+          lowerBounds[i], upperBounds[i], (messageLength, messageString) => {
+            totalSize += messageLength * messageAverageSizes[i];
+            messagesCount += messageLength;
+            stringOutput[i + 1] = messageString;
+          });
+    }
+    stringOutput[0] =
+        "<br>There are currently " + messagesCount +
+        " messages in your inbox, with the following size repartition:<br>";
+    stringOutput[7] =
+        'for an estimated total size of <span style="color: #e54b76;"><strong>' +
+        totalSize + '</strong></span> bytes. ';
+  };
 
-  await callback(stringOutput, "email-stats");
+  await getAllMessages();
 
-  return stringOutput;
+  callback(stringOutput, "email-stats");
 }
