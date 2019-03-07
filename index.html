@@ -70,7 +70,7 @@
         var apiKey = "AIzaSyAcoGDGmi0FIBOpDslQnHXUcVv-_4HVgx8";
       </script>
       <div id="signin-button" class="g-signin2" data-onsuccess="onSignIn" data-theme="dark" align="center"></div>
-      <script src="js/script.js"></script>
+      <!-- <script src="js/script.js"></script> -->
       <a id="signout-link" onclick="signOut();" style="display:none;font-size:xx-large;"><strong>Sign out</strong></a>
     </div>
   </div>
@@ -216,15 +216,16 @@
           <div class="content-title-holder">
             <p class="content-title">STATS</p>
           </div>
-          <div id="email-stats" class="one_half ">
+          <a id="show-email-stats" onclick="showStats();"><font size="32"><strong>Show me!</strong></font></a>
+          <div id="email-stats" class="one_half " style="display:none;">
           </div>
-          <div class="one_half last ">
+          <!-- <div class="one_half last ">
             <span style="color: #e54b76;"><strong>2001-2003 ·</strong></span> <span style="color:#727190;"><em>Art Studio Lorem Donec</em></span><br>
             <span style="color: #e54b76;"><strong>2003-2006 ·</strong></span> <span style="color:#727190;"><em>Per Set Web Site</em></span><br>
             <span style="color: #e54b76;"><strong>2006-2010 ·</strong></span> <span style="color:#727190;"><em>Setera Donec EstNunc</em></span><br>
             <span style="color: #e54b76;"><strong>2010-2013 ·</strong></span> <span style="color:#727190;"><em>Studio Labore Tempor</em></span><br>
             <span style="color: #e54b76;"><strong>2013-2016 ·</strong></span> <span style="color:#727190;"><em>Magna Ipsum Amet</em></span><br>
-          </div>
+          </div> -->
           <div class="clear"></div>
           <br>
           <br>
@@ -632,6 +633,7 @@
   <script type='text/javascript' src='js/imagesloaded.pkgd.js'></script>
   <script type='text/javascript' src='js/jquery.prettyPhoto.js'></script>
   <script type='text/javascript' src='js/main.js'></script>
+  <script type='text/javascript' src="js/script.js"></script>
 </body>
 
 </html>

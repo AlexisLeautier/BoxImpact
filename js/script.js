@@ -1,3 +1,7 @@
+var stringOutput = new Array(8);
+var totalSize = 0;
+var messagesCount = 0;
+
 function onSignIn(googleUser) {
 
   // Useful data for your client-side scripts:
@@ -22,7 +26,7 @@ function onSignIn(googleUser) {
   // console.log("ID Token: " + id_token);
 
   // Compute email statistics
-  computeEmailStatistics(email);
+  computeEmailStatistics(email, getEmailStatString);
 
   // Remove element
   var rm_services = document.getElementById("services-menu-item");
@@ -141,12 +145,10 @@ function signOut() {
   });
 }
 
-function computeEmailStatistics(email) {
+function computeEmailStatistics(email, callback) {
   // Get list of messages
-  gapi.client.load('gmail', 'v1', listMessages);
+  gapi.client.load('gmail', 'v1', callback);
 }
-
-function listMessages() { getEmailStatString(printOutput); }
 
 function printOutput(stringArray, id) {
   document.getElementById(id).innerHTML = "";
@@ -170,17 +172,16 @@ function getMessages(userId, query, spam, callback) {
         getPageOfMessages(request, result);
       } else {
         callback(result);
-        // return new Promise(resolve => {resolve(result)});
       }
     });
   };
   var initialRequest = gapi.client.gmail.users.messages.list(
       {'userId' : userId, 'includeSpamTrash' : true, 'q' : query});
   getPageOfMessages(initialRequest, []);
-  // return new Promise(resolve => {resolve(result)});
 }
 
-function countMessagesInSizeRange(lowerSize, upperSize, callback) {
+function countMessagesInSizeRange(lowerSize, upperSize, averageSizeInBytes,
+                                  index) {
   var stringSizeQuery = '';
   var stringSizeRange = '';
   if (lowerSize !== '') {
@@ -195,45 +196,42 @@ function countMessagesInSizeRange(lowerSize, upperSize, callback) {
   }
   stringSizeRange += ': ';
 
-  var messagesLength = 0;
   var messageString = "";
 
   getMessages('me', stringSizeQuery, true, (result) => {
-    messageString = '<span style="color: #e54b76;"><strong>' + stringSizeRange +
-                    '<strong></span> <span style="color:#727190;"><em>' +
-                    result.length + '</em></span><br>';
-    messagesLength = result.length;
+    stringOutput[index] =
+        '<span style="color: #e54b76;"><strong>' + stringSizeRange +
+        '<strong></span> <span style="color:#727190;"><em>' +
+        ((result[0] == null) ? 0 : result.length) + '</em></span><br>';
+    messagesCount += ((result[0] == null) ? 0 : result.length);
+    totalSize += ((result[0] == null) ? 0 : result.length) * averageSizeInBytes;
   });
-  callback(messagesLength, messageString);
 }
 
-async function getEmailStatString(callback) {
-  var totalSize = 0;
-  var messagesCount = 0;
+function getEmailStatString(callback) {
   // Get number of messages within size brackets to estimate size
   var lowerBounds = [ '', '250K', '500K', '1M', '2M', '5M' ];
   var upperBounds = [ '250K', '500K', '1M', '2M', '5M', '' ];
   var messageAverageSizes = [ 125, 375, 750, 1500, 3500, 10000 ];
 
-  var stringOutput = new Array(8);
-  var getAllMessages = () => {
-    for (let i = 0; i < 6; i++) {
-      countMessagesInSizeRange(
-          lowerBounds[i], upperBounds[i], (messageLength, messageString) => {
-            totalSize += messageLength * messageAverageSizes[i];
-            messagesCount += messageLength;
-            stringOutput[i + 1] = messageString;
-          });
-    }
-    stringOutput[0] =
-        "<br>There are currently " + messagesCount +
-        " messages in your inbox, with the following size repartition:<br>";
-    stringOutput[7] =
-        'for an estimated total size of <span style="color: #e54b76;"><strong>' +
-        totalSize + '</strong></span> bytes. ';
-  };
+  for (let i = 0; i < 6; i++) {
+    countMessagesInSizeRange(lowerBounds[i], upperBounds[i],
+                             messageAverageSizes[i], i + 1);
+  }
+}
 
-  await getAllMessages();
+function showStats() {
+  stringOutput[0] =
+      "<br>There are currently " + messagesCount +
+      " messages in your inbox, with the following size repartition:<br>";
+  stringOutput[7] =
+      'for an estimated total size of <span style="color: #e54b76;"><strong>' +
+      totalSize + '</strong></span> bytes. ';
 
-  callback(stringOutput, "email-stats");
+  console.log("Array", stringOutput);
+
+  printOutput(stringOutput, "email-stats");
+
+  document.getElementById("email-stats").style.display = "block";
+  document.getElementById("show-email-stats").style.display = "none";
 }
