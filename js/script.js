@@ -1,18 +1,15 @@
-var stringOutput = new Array(8);
+var numbersStringArray = new Array(8);
+var statsArray = new Array(4);
 var totalSize = 0;
 var messagesCount = 0;
+var conversionCarbonPerByte = 19.0 / 1000000.0;
+var conversionMilesPerCarbon = 1.0 / 404.0;
+var conversionKmPerCarbon = conversionMilesPerCarbon / 0.621371;
 
 function onSignIn(googleUser) {
 
   // Useful data for your client-side scripts:
   var profile = googleUser.getBasicProfile();
-  // console.log("ID: " +
-  //             profile.getId()); // Don't send this directly to your server!
-  // console.log('Full Name: ' + profile.getName());
-  // console.log('Given Name: ' + profile.getGivenName());
-  // console.log('Family Name: ' + profile.getFamilyName());
-  // console.log("Image URL: " + profile.getImageUrl());
-  // console.log("Email: " + profile.getEmail());
 
   var name = profile.getName();
   var givenName = profile.getGivenName();
@@ -23,10 +20,9 @@ function onSignIn(googleUser) {
 
   // The ID token you need to pass to your backend:
   var id_token = googleUser.getAuthResponse().id_token;
-  // console.log("ID Token: " + id_token);
 
   // Compute email statistics
-  computeEmailStatistics(email, getEmailStatString);
+  computeEmailStatistics(email, getEmailStats);
 
   // Remove element
   var rm_services = document.getElementById("services-menu-item");
@@ -40,17 +36,9 @@ function onSignIn(googleUser) {
   add_portfolio.setAttribute('id', "portfolio-menu-item");
   document.getElementById("main-menu-list").appendChild(add_portfolio);
   var add_about = document.createElement('li');
-  add_about.innerHTML = '<a href="#about">About</a>';
+  add_about.innerHTML = '<a href="#about">Stats</a>';
   add_about.setAttribute('id', "about-menu-item");
   document.getElementById("main-menu-list").appendChild(add_about);
-  var add_news = document.createElement('li');
-  add_news.innerHTML = '<a href="#news">News</a>';
-  add_news.setAttribute('id', "news-menu-item");
-  document.getElementById("main-menu-list").appendChild(add_news);
-  var add_video = document.createElement('li');
-  add_video.innerHTML = '<a href="#video">Video</a>';
-  add_video.setAttribute('id', "video-menu-item");
-  document.getElementById("main-menu-list").appendChild(add_video);
   var add_skills = document.createElement('li');
   add_skills.innerHTML = '<a href="#skills">Skills</a>';
   add_skills.setAttribute('id', "skills-menu-item");
@@ -62,12 +50,10 @@ function onSignIn(googleUser) {
 
   // Make other sections visible
   document.getElementById("services").style.display = "none";
+  document.getElementById("signin-button").style.display = "none";
   document.getElementById("portfolio").style.display = "block";
   document.getElementById("about").style.display = "block";
-  document.getElementById("news").style.display = "block";
-  document.getElementById("video").style.display = "block";
   document.getElementById("skills").style.display = "block";
-  document.getElementById("signin-button").style.display = "none";
   document.getElementById("signout-link").style.display = "block";
   document.getElementById("email-stats").innerHTML = "";
 
@@ -115,10 +101,6 @@ function signOut() {
     rm_portfolio.parentNode.removeChild(rm_portfolio);
     var rm_about = document.getElementById("about-menu-item");
     rm_about.parentNode.removeChild(rm_about);
-    var rm_news = document.getElementById("news-menu-item");
-    rm_news.parentNode.removeChild(rm_news);
-    var rm_video = document.getElementById("video-menu-item");
-    rm_video.parentNode.removeChild(rm_video);
     var rm_skills = document.getElementById("skills-menu-item");
     rm_skills.parentNode.removeChild(rm_skills);
     var rm_contact = document.getElementById("contact-menu-item");
@@ -134,14 +116,17 @@ function signOut() {
     add_contact.setAttribute('id', "contact-menu-item");
     document.getElementById("main-menu-list").appendChild(add_contact);
 
-    document.getElementById("services").style.display = "block";
     document.getElementById("portfolio").style.display = "none";
     document.getElementById("about").style.display = "none";
-    document.getElementById("news").style.display = "none";
-    document.getElementById("video").style.display = "none";
     document.getElementById("skills").style.display = "none";
-    document.getElementById("signin-button").style.display = "block";
     document.getElementById("signout-link").style.display = "none";
+    document.getElementById("services").style.display = "block";
+    document.getElementById("signin-button").style.display = "block";
+
+    numbersStringArray = new Array(8);
+    statsArray = new Array(4);
+    totalSize = 0;
+    messagesCount = 0;
   });
 }
 
@@ -196,10 +181,8 @@ function countMessagesInSizeRange(lowerSize, upperSize, averageSizeInBytes,
   }
   stringSizeRange += ': ';
 
-  var messageString = "";
-
   getMessages('me', stringSizeQuery, true, (result) => {
-    stringOutput[index] =
+    numbersStringArray[index] =
         '<span style="color: #e54b76;"><strong>' + stringSizeRange +
         '<strong></span> <span style="color:#727190;"><em>' +
         ((result[0] == null) ? 0 : result.length) + '</em></span><br>';
@@ -208,7 +191,7 @@ function countMessagesInSizeRange(lowerSize, upperSize, averageSizeInBytes,
   });
 }
 
-function getEmailStatString(callback) {
+function getEmailStats() {
   // Get number of messages within size brackets to estimate size
   var lowerBounds = [ '', '250K', '500K', '1M', '2M', '5M' ];
   var upperBounds = [ '250K', '500K', '1M', '2M', '5M', '' ];
@@ -218,20 +201,113 @@ function getEmailStatString(callback) {
     countMessagesInSizeRange(lowerBounds[i], upperBounds[i],
                              messageAverageSizes[i], i + 1);
   }
+
+  // Compute improvement stats
+  getMessages('me', 'in:trash', true, (result) => {
+    console.log("Result", result);
+    statsArray[0] = (result[0] == null) ? 0 : result.length;
+  });
+  getMessages(
+      'me', 'in:sent', true,
+      (result) => { statsArray[1] = (result[0] == null) ? 0 : result.length; });
+  getMessages(
+      'me', 'in:spam', true,
+      (result) => { statsArray[2] = (result[0] == null) ? 0 : result.length; });
+  getMessages(
+      'me', 'older_than:1y', true,
+      (result) => { statsArray[3] = (result[0] == null) ? 0 : result.length; });
 }
 
-function showStats() {
-  stringOutput[0] =
+function computeCarbonFootprint(callback) {
+  // Use the carbon per Mb conversion to compute the total carbon footprint of
+  // the inbox
+  var totalFootprint = totalSize * conversionCarbonPerByte;
+  var totalMiles = totalFootprint * conversionMilesPerCarbon;
+  var totalKm = totalFootprint * conversionKmPerCarbon;
+
+  var stringArray = [
+    'This is equivalent to <br><span style="color: #e54b76;"><strong>' +
+    totalFootprint.toExponential(2) +
+    'g</strong></span> of CO². Or <span style="color: #e54b76;"><strong>' +
+    totalKm.toExponential(2) + 'km </strong></span>(or ' +
+    totalMiles.toExponential(2) +
+    ' miles) driven on an average car with a 11L/100km = 22mpg consumption.'
+  ]
+
+  callback(stringArray, "email-stats2");
+}
+
+function showNumbers() {
+  document.getElementById("show-email-numbers").style.display = "none";
+
+  numbersStringArray[0] =
       "<br>There are currently " + messagesCount +
       " messages in your inbox, with the following size repartition:<br>";
-  stringOutput[7] =
+  numbersStringArray[7] =
       'for an estimated total size of <span style="color: #e54b76;"><strong>' +
       totalSize + '</strong></span> bytes. ';
 
-  console.log("Array", stringOutput);
-
-  printOutput(stringOutput, "email-stats");
+  printOutput(numbersStringArray, "email-stats");
 
   document.getElementById("email-stats").style.display = "block";
+  document.getElementById("email-image1").style.display = "block";
+
+  computeCarbonFootprint(printOutput);
+
+  document.getElementById("email-stats2").style.display = "block";
+  document.getElementById("email-image2").style.display = "block";
+
+  document.getElementById('about').scrollIntoView(
+      {block : 'start', behavior : 'smooth'});
+}
+
+function sum(array) {
+  var sumValue = 0;
+  for (i = 0; i < array.length; i++) {
+    sumValue += array[i];
+  }
+  return sumValue;
+}
+
+function showStats() {
   document.getElementById("show-email-stats").style.display = "none";
+
+  console.log("statsArray", statsArray);
+
+  var messagesToClean = sum(statsArray);
+
+  console.log("sum", messagesToClean);
+
+  if (statsArray[0] > 0.15 * messagesToClean) {
+    var messagesPercentage = 100 * statsArray[0] / messagesToClean;
+    document.getElementById("trash-percentage").style.width =
+        messagesPercentage.toFixed() + "%";
+    document.getElementById("trash-percentage-disp").innerHTML =
+        messagesPercentage.toFixed() + "%";
+    document.getElementById("trash-bar").style.display = "block";
+  }
+  if (statsArray[1] > 0.15 * messagesToClean) {
+    var messagesPercentage = 100 * statsArray[1] / messagesToClean;
+    document.getElementById("sent-percentage").style.width =
+        messagesPercentage.toFixed() + "%";
+    document.getElementById("sent-percentage-disp").innerHTML =
+        messagesPercentage.toFixed() + "%";
+    document.getElementById("sent-bar").style.display = "block";
+  }
+  if (statsArray[2] > 0.15 * messagesToClean) {
+    var messagesPercentage = 100 * statsArray[2] / messagesToClean;
+    document.getElementById("spam-percentage").style.width =
+        messagesPercentage.toFixed() + "%";
+    document.getElementById("spam-percentage-disp").innerHTML =
+        messagesPercentage.toFixed() + "%";
+    document.getElementById("spam-bar").style.display = "block";
+  }
+  if (statsArray[3] > 0.15 * messagesToClean) {
+    var messagesPercentage = 100 * statsArray[3] / messagesToClean;
+    document.getElementById("old-percentage").style.width =
+        messagesPercentage.toFixed() + "%";
+    document.getElementById("old-percentage-disp").innerHTML =
+        messagesPercentage.toFixed() + "%";
+    document.getElementById("old-bar").style.display = "block";
+  }
 }
