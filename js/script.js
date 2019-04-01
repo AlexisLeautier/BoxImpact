@@ -5,61 +5,100 @@ var messagesCount = 0;
 var conversionCarbonPerByte = 19.0 / 1000000.0;
 var conversionMilesPerCarbon = 1.0 / 404.0;
 var conversionKmPerCarbon = conversionMilesPerCarbon / 0.621371;
+var signedIn = false;
 
 function onSignIn(googleUser) {
+  if (!signedIn) {
+    // Useful data for your client-side scripts:
+    var profile = googleUser.getBasicProfile();
+    signedIn = true;
 
-  // Useful data for your client-side scripts:
-  var profile = googleUser.getBasicProfile();
+    var name = profile.getName();
+    var givenName = profile.getGivenName();
+    document.getElementById("welcome-text").innerHTML =
+        "Welcome \n" + givenName;
+    var familyName = profile.getFamilyName();
+    var imageUrl = profile.getImageUrl();
+    var email = profile.getEmail();
 
-  var name = profile.getName();
-  var givenName = profile.getGivenName();
-  document.getElementById("welcome-text").innerHTML = "Welcome \n" + givenName;
-  var familyName = profile.getFamilyName();
-  var imageUrl = profile.getImageUrl();
-  var email = profile.getEmail();
+    // The ID token you need to pass to your backend:
+    var id_token = googleUser.getAuthResponse().id_token;
 
-  // The ID token you need to pass to your backend:
-  var id_token = googleUser.getAuthResponse().id_token;
+    // Compute email statistics
+    computeEmailStatistics(email, getEmailStats);
 
-  // Compute email statistics
-  computeEmailStatistics(email, getEmailStats);
+    // Remove element
+    var rm_services = document.getElementById("services-menu-item");
+    rm_services.parentNode.removeChild(rm_services);
+    var rm_contact = document.getElementById("contact-menu-item");
+    rm_contact.parentNode.removeChild(rm_contact);
 
-  // Remove element
-  var rm_services = document.getElementById("services-menu-item");
-  rm_services.parentNode.removeChild(rm_services);
-  var rm_contact = document.getElementById("contact-menu-item");
-  rm_contact.parentNode.removeChild(rm_contact);
+    // Add elements to menu
+    var add_portfolio = document.createElement('li');
+    add_portfolio.innerHTML = '<a href="#portfolio">Welcome</a>';
+    add_portfolio.setAttribute('id', "portfolio-menu-item");
+    document.getElementById("main-menu-list").appendChild(add_portfolio);
+    var add_about = document.createElement('li');
+    add_about.innerHTML = '<a href="#about">Stats</a>';
+    add_about.setAttribute('id', "about-menu-item");
+    document.getElementById("main-menu-list").appendChild(add_about);
+    var add_skills = document.createElement('li');
+    add_skills.innerHTML = '<a href="#skills">Skills</a>';
+    add_skills.setAttribute('id', "skills-menu-item");
+    document.getElementById("main-menu-list").appendChild(add_skills);
+    var add_contact = document.createElement('li');
+    add_contact.innerHTML = '<a href="#contact">Contact</a>';
+    add_contact.setAttribute('id', "contact-menu-item");
+    document.getElementById("main-menu-list").appendChild(add_contact);
 
-  // Add elements to menu
-  var add_portfolio = document.createElement('li');
-  add_portfolio.innerHTML = '<a href="#portfolio">Welcome</a>';
-  add_portfolio.setAttribute('id', "portfolio-menu-item");
-  document.getElementById("main-menu-list").appendChild(add_portfolio);
-  var add_about = document.createElement('li');
-  add_about.innerHTML = '<a href="#about">Stats</a>';
-  add_about.setAttribute('id', "about-menu-item");
-  document.getElementById("main-menu-list").appendChild(add_about);
-  var add_skills = document.createElement('li');
-  add_skills.innerHTML = '<a href="#skills">Skills</a>';
-  add_skills.setAttribute('id', "skills-menu-item");
-  document.getElementById("main-menu-list").appendChild(add_skills);
-  var add_contact = document.createElement('li');
-  add_contact.innerHTML = '<a href="#contact">Contact</a>';
-  add_contact.setAttribute('id', "contact-menu-item");
-  document.getElementById("main-menu-list").appendChild(add_contact);
+    // Make other sections visible
+    document.getElementById("services").style.display = "none";
+    document.getElementById("portfolio").style.display = "block";
+    document.getElementById("about").style.display = "block";
+    document.getElementById("skills").style.display = "block";
+    document.getElementById("email-stats").innerHTML = "";
 
-  // Make other sections visible
-  document.getElementById("services").style.display = "none";
-  document.getElementById("signin-button").style.display = "none";
-  document.getElementById("portfolio").style.display = "block";
-  document.getElementById("about").style.display = "block";
-  document.getElementById("skills").style.display = "block";
-  document.getElementById("signout-link").style.display = "block";
-  document.getElementById("email-stats").innerHTML = "";
+    // Scroll to the next section
+    document.getElementById('portfolio')
+        .scrollIntoView({block : 'start', behavior : 'smooth'});
+  } else {
+    var auth2 = gapi.auth2.getAuthInstance();
+    auth2.signOut().then(function() {
+      console.log('User signed out.');
 
-  // Scroll to the next section
-  document.getElementById('portfolio')
-      .scrollIntoView({block : 'start', behavior : 'smooth'});
+      // Remove element
+      var rm_portfolio = document.getElementById("portfolio-menu-item");
+      rm_portfolio.parentNode.removeChild(rm_portfolio);
+      var rm_about = document.getElementById("about-menu-item");
+      rm_about.parentNode.removeChild(rm_about);
+      var rm_skills = document.getElementById("skills-menu-item");
+      rm_skills.parentNode.removeChild(rm_skills);
+      var rm_contact = document.getElementById("contact-menu-item");
+      rm_contact.parentNode.removeChild(rm_contact);
+
+      // Add elements to menu
+      var add_services = document.createElement('li');
+      add_services.innerHTML = '<a href="#services">Why</a>';
+      add_services.setAttribute('id', "services-menu-item");
+      document.getElementById("main-menu-list").appendChild(add_services);
+      var add_contact = document.createElement('li');
+      add_contact.innerHTML = '<a href="#contact">Contact</a>';
+      add_contact.setAttribute('id', "contact-menu-item");
+      document.getElementById("main-menu-list").appendChild(add_contact);
+
+      document.getElementById("portfolio").style.display = "none";
+      document.getElementById("about").style.display = "none";
+      document.getElementById("skills").style.display = "none";
+      document.getElementById("signout-link").style.display = "none";
+      document.getElementById("services").style.display = "block";
+
+      numbersStringArray = new Array(8);
+      statsArray = new Array(4);
+      totalSize = 0;
+      messagesCount = 0;
+    });
+    signedIn = false;
+  }
 }
 
 function handleClientLoad() {
@@ -90,45 +129,6 @@ function handleAuthResult(authResult) {
 }
 
 function loadGmailApi() { gapi.client.load('gmail', 'v1', displayInbox); }
-
-function signOut() {
-  var auth2 = gapi.auth2.getAuthInstance();
-  auth2.signOut().then(function() {
-    console.log('User signed out.');
-
-    // Remove element
-    var rm_portfolio = document.getElementById("portfolio-menu-item");
-    rm_portfolio.parentNode.removeChild(rm_portfolio);
-    var rm_about = document.getElementById("about-menu-item");
-    rm_about.parentNode.removeChild(rm_about);
-    var rm_skills = document.getElementById("skills-menu-item");
-    rm_skills.parentNode.removeChild(rm_skills);
-    var rm_contact = document.getElementById("contact-menu-item");
-    rm_contact.parentNode.removeChild(rm_contact);
-
-    // Add elements to menu
-    var add_services = document.createElement('li');
-    add_services.innerHTML = '<a href="#services">Why</a>';
-    add_services.setAttribute('id', "services-menu-item");
-    document.getElementById("main-menu-list").appendChild(add_services);
-    var add_contact = document.createElement('li');
-    add_contact.innerHTML = '<a href="#contact">Contact</a>';
-    add_contact.setAttribute('id', "contact-menu-item");
-    document.getElementById("main-menu-list").appendChild(add_contact);
-
-    document.getElementById("portfolio").style.display = "none";
-    document.getElementById("about").style.display = "none";
-    document.getElementById("skills").style.display = "none";
-    document.getElementById("signout-link").style.display = "none";
-    document.getElementById("services").style.display = "block";
-    document.getElementById("signin-button").style.display = "block";
-
-    numbersStringArray = new Array(8);
-    statsArray = new Array(4);
-    totalSize = 0;
-    messagesCount = 0;
-  });
-}
 
 function computeEmailStatistics(email, callback) {
   // Get list of messages
@@ -203,10 +203,9 @@ function getEmailStats() {
   }
 
   // Compute improvement stats
-  getMessages('me', 'in:trash', true, (result) => {
-    console.log("Result", result);
-    statsArray[0] = (result[0] == null) ? 0 : result.length;
-  });
+  getMessages(
+      'me', 'in:trash', true,
+      (result) => { statsArray[0] = (result[0] == null) ? 0 : result.length; });
   getMessages(
       'me', 'in:sent', true,
       (result) => { statsArray[1] = (result[0] == null) ? 0 : result.length; });
@@ -272,11 +271,13 @@ function sum(array) {
 function showStats() {
   document.getElementById("show-email-stats").style.display = "none";
 
-  console.log("statsArray", statsArray);
-
   var messagesToClean = sum(statsArray);
+  var displayOtherStats = false;
 
-  console.log("sum", messagesToClean);
+  document.getElementById("stats-intro").innerHTML +=
+      "There's a total of " + messagesToClean +
+      " messages in your inbox that could be deleted without you even noticing!<br><br>";
+  document.getElementById("stats-intro").style.display = "block";
 
   if (statsArray[0] > 0.15 * messagesToClean) {
     var messagesPercentage = 100 * statsArray[0] / messagesToClean;
@@ -285,6 +286,10 @@ function showStats() {
     document.getElementById("trash-percentage-disp").innerHTML =
         messagesPercentage.toFixed() + "%";
     document.getElementById("trash-bar").style.display = "block";
+  } else if (statsArray[0] > 0) {
+    document.getElementById("other-stats").innerHTML +=
+        "- empty trash: " + statsArray[0] + " messages.<br>";
+    displayOtherStats = true;
   }
   if (statsArray[1] > 0.15 * messagesToClean) {
     var messagesPercentage = 100 * statsArray[1] / messagesToClean;
@@ -293,6 +298,10 @@ function showStats() {
     document.getElementById("sent-percentage-disp").innerHTML =
         messagesPercentage.toFixed() + "%";
     document.getElementById("sent-bar").style.display = "block";
+  } else if (statsArray[1] > 0) {
+    document.getElementById("other-stats").innerHTML +=
+        "- delete sent messages: " + statsArray[1] + " messages.<br>";
+    displayOtherStats = true;
   }
   if (statsArray[2] > 0.15 * messagesToClean) {
     var messagesPercentage = 100 * statsArray[2] / messagesToClean;
@@ -301,6 +310,10 @@ function showStats() {
     document.getElementById("spam-percentage-disp").innerHTML =
         messagesPercentage.toFixed() + "%";
     document.getElementById("spam-bar").style.display = "block";
+  } else if (statsArray[2] > 0) {
+    document.getElementById("other-stats").innerHTML +=
+        "- delete spams: " + statsArray[2] + " messages.<br>";
+    displayOtherStats = true;
   }
   if (statsArray[3] > 0.15 * messagesToClean) {
     var messagesPercentage = 100 * statsArray[3] / messagesToClean;
@@ -309,5 +322,13 @@ function showStats() {
     document.getElementById("old-percentage-disp").innerHTML =
         messagesPercentage.toFixed() + "%";
     document.getElementById("old-bar").style.display = "block";
+  } else if (statsArray[3] > 0) {
+    document.getElementById("other-stats").innerHTML +=
+        "- delete old messages: " + statsArray[3] + " messages.<br>";
+    displayOtherStats = true;
+  }
+
+  if (displayOtherStats) {
+    document.getElementById("other-stats").style.display = "block";
   }
 }

@@ -63,7 +63,7 @@
       <img class="top-logo" src="demo-images/logo.png" alt="Boxus" />
       <br>
       <h1 class="big-title">Understand The Environmental Impact<span>Of Your Inbox</span></h1>
-      <p class="title-desc">Use the link below to log in/out</p>
+      <p class="title-desc">Use the link below to log in or scroll down for more information</p>
       <br />
       <script>
         var scopes = "profile email https://www.googleapis.com/auth/gmail.readonly";
@@ -71,8 +71,6 @@
         var apiKey = "AIzaSyAcoGDGmi0FIBOpDslQnHXUcVv-_4HVgx8";
       </script>
       <div id="signin-button" class="g-signin2" data-onsuccess="onSignIn" data-theme="dark" align="center"></div>
-      <button  id="signout-link" style="display:none;opacity:0.4;width:20%"><a onclick="signOut();" style="font-size:xx-large;"><strong>Sign out</strong></a>
-      </button>
     </div>
   </div>
 
@@ -164,6 +162,8 @@
           <div class="content-title-holder">
             <p class="content-title">STATS</p>
           </div>
+          <p>Thank you for letting us access your inbox, we promise we will not access their content. In this section, you can find information about hte number of emails that are currently stored in your inbox and their approximate size.</p>
+          <br>
           <a id="show-email-numbers" onclick="showNumbers();">
             <font size="32"><br /><br /><strong>Show me</strong><br /><br /></font>
           </a>
@@ -195,6 +195,7 @@
           </div>
           <p>There are very easy ways for you to reduce the impact your inbox has on the environment. By deleting your old messages that require servers running to be accessible at any time, unsubscribing from mailing lists or reducing the number of recipients and the size of the attachments to your emails, you can easily reduce the carbon footprint of your inbox.</p>
           <br>
+          <p id="stats-intro" style="display:none"></p>
           <a id="show-email-stats" onclick="showStats();">
             <font size="32"><br /><br /><strong>Show me</strong><br /><br /></font>
           </a>
@@ -226,6 +227,7 @@
               <div class="progress_bar_field_perecent" style="background-color:#E74C78;"></div>
             </div>
           </div>
+          <p id="other-stats" style="display:none">These other actions can be performed to reduce the carbon footprint of your inbox:<br></p>
         </div>
       </div>
       <div class="clear"></div>
